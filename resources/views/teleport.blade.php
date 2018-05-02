@@ -23,6 +23,7 @@
         <meta name="msapplication-navbutton-color" content="#222">
         <meta name="apple-mobile-web-app-status-bar-style" content="#222">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
 
         <!-- Styles -->
         <style>
@@ -201,16 +202,15 @@
                     Teleport Search App
                 </div>
 
-                <section class="" style="margin: 30px auto">
+                <section id="suggestions__section" class="" style="margin: 30px auto">
                     <form method="POST" action="/result" autocomplete="off" id="search-form">
                         {{ csrf_field() }}
                         <label for="query" style="color: black; font-weight: 400; font-size: 1.25rem; display: inline-block; margin-bottom: 6px;">Wpisz poszukiwane miasto:</label>
                         <br>
                         <input type="text" name="query" placeholder="Wroclaw" maxlength="25" id="autocomplete-input" required>
                         <button type="submit">Wyszukaj!</button>
-                        <div class="autocomplete-div">
-                                <ul class="suggestions"></ul>
-                            </div>
+                        <div class="autocomplete-div" id="autocomplete-div">
+                        </div>
                         @if(Session::has('error'))
                             <span style="color: #FF1744; font-weight: 600; margin-top: 6px; display: block"> {!! Session::get('error') !!} </span>
                         @endif
@@ -230,13 +230,31 @@
             let lastInput;
             let html;
 
+            function cleanDiv(target) {
+                var cNode = target.cloneNode(false);
+                target.parentNode.replaceChild(cNode ,target);
+            }
+
+            function watchAutoComplete() {
+                const autocomplete = document.querySelectorAll(".autocomplete");
+                autocomplete.forEach(anchor => anchor.addEventListener('click', autocompleteInput));
+            }
+
+            function appendDiv(html) {
+                let ul = document.createElement('ul');
+                ul.className = 'suggestions';
+                ul.innerHTML = html;
+                document.getElementById('autocomplete-div').appendChild(ul);
+            }
+
             function findMatches() {
+                const targetDiv = document.querySelector('.autocomplete-div');
                 const inputValue = this.value;
                 if(inputValue == lastInput) {
                     if(!html == '') {
-                        suggestions.innerHTML = html;
-                        const autocomplete = document.querySelectorAll(".autocomplete");
-                        autocomplete.forEach(anchor => anchor.addEventListener('click', autocompleteInput));
+                        cleanDiv(targetDiv);
+                        appendDiv(html);
+                        watchAutoComplete();
                     }
                 } else if (inputValue.length >= 3) {
                     lastInput = inputValue;
@@ -256,8 +274,9 @@
                         data: {input: inputValue},
                         success: function (data) {
                             if(data == null || data.length == 0) {
-                                suggestions.innerHTML = null;
+                                
                             } else {
+                                cleanDiv(targetDiv);
                                 html = data.map(place => {
                                     const city = place.substr(0, place.indexOf(',')); 
                                     const rest = place.substr(place.indexOf(','), place.length);
@@ -267,15 +286,16 @@
                                         </li>
                                         `;
                                 }).join('');
-                                suggestions.innerHTML = html;
-                                const autocomplete = document.querySelectorAll(".autocomplete");
-                                autocomplete.forEach(anchor => anchor.addEventListener('click', autocompleteInput));
+                                appendDiv(html);
+                                watchAutoComplete();
                             }
                         }
                     });
+                    
                 } else {
-                    suggestions.innerHTML = null;
+                    cleanDiv(targetDiv);
                 }
+                suggestions = document.querySelector(".suggestions");
             }
 
             function autocompleteInput(event) {
@@ -284,25 +304,47 @@
                 const span = this.querySelector(".bold-span").innerHTML;
                 const form = document.querySelector("#search-form");
                 input.value = span;
-                suggestions.innerHTML = null;
+                const targetDiv = document.querySelector('.autocomplete-div');
+                cleanDiv(targetDiv);
                 form.submit();
             }
 
             const input = document.querySelector("#autocomplete-input");
-            const suggestions = document.querySelector(".suggestions");
+            const suggestionsContainer = document.querySelector("#autocomplete-div");
 
-            input.addEventListener("change", findMatches);
             input.addEventListener("keyup", findMatches);
             input.addEventListener("focus", findMatches);
 
             document.addEventListener('click', function(event) {
-                const isClickInside = suggestions.contains(event.target);
+                const targetDiv = document.querySelector('.autocomplete-div');
+                const isClickInside = suggestionsContainer.contains(event.target);
                 const isInput = input.contains(event.target);
-
                 if (!isClickInside && !isInput) {
-                    suggestions.innerHTML = null;
+                    cleanDiv(targetDiv);
                 }
             });
+
+        </script>
+
+        <script>
+
+            var suggestionModule = new Vue ({
+                
+                el: '#suggestions__section',
+
+                data: {
+                    cities: []
+                },
+
+                methods: {
+                    typingText() {
+                        alert("Zmiana input");
+                    }
+                }
+
+
+
+            })
 
         </script>
     </body>
