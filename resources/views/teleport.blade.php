@@ -325,27 +325,5 @@
             });
 
         </script>
-
-        <script>
-
-            var suggestionModule = new Vue ({
-                
-                el: '#suggestions__section',
-
-                data: {
-                    cities: []
-                },
-
-                methods: {
-                    typingText() {
-                        alert("Zmiana input");
-                    }
-                }
-
-
-
-            })
-
-        </script>
     </body>
 </html>
